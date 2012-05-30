@@ -6,35 +6,45 @@ by Lokesh Dhakar - http://www.lokeshdhakar.com
 For more information, visit:
 http://lokeshdhakar.com/projects/lightbox2/
 
-Licensed under the Creative Commons Attribution 2.5 License - http://creativecommons.org/licenses/by/2.5/
-- free for use in both personal and commercial projects
-- attribution requires leaving author name, author link, and the license info intact
+Modified by David Z. Chen to include automatic resizing of images.
+
+Licensed under the Creative Commons Attribution 2.5 License - 
+  http://creativecommons.org/licenses/by/2.5/
+  - free for use in both personal and commercial projects
+  - attribution requires leaving author name, author link, and the license 
+    info intact
 	
 Thanks
-- Scott Upton(uptonic.com), Peter-Paul Koch(quirksmode.com), and Thomas Fuchs(mir.aculo.us) for ideas, libs, and snippets.
-- Artemy Tregubenko (arty.name) for cleanup and help in updating to latest proto-aculous in v2.05.
-
+  - Scott Upton(uptonic.com), Peter-Paul Koch(quirksmode.com), 
+    and Thomas Fuchs(mir.aculo.us) for ideas, libs, and snippets.
+  - Artemy Tregubenko (arty.name) for cleanup and help in updating to latest 
+    proto-aculous in v2.05.
 
 Table of Contents
 =================
 LightboxOptions
 
 Lightbox
-- constructor
-- init
-- enable
-- build
-- start
-- changeImage
-- sizeContainer
-- showImage
-- updateNav
-- updateDetails
-- preloadNeigbhoringImages
-- enableKeyboardNav
-- disableKeyboardNav
-- keyboardAction
-- end
+  - constructor
+  - init
+  - enable
+  - build
+  - start
+  - changeImage
+>>>DZC
+  - adjustImageSize
+  - getPageSize
+  - getPageScroll
+<<<DZC
+  - sizeContainer
+  - showImage
+  - updateNav
+  - updateDetails
+  - preloadNeigbhoringImages
+  - enableKeyboardNav
+  - disableKeyboardNav
+  - keyboardAction
+  - end
 
 options = new LightboxOptions
 lightbox = new Lightbox options
@@ -48,12 +58,17 @@ lightbox = new Lightbox options
   LightboxOptions = (function() {
 
     function LightboxOptions() {
-      this.fileLoadingImage = 'images/loading.gif';
-      this.fileCloseImage = 'images/close.png';
+      this.fileLoadingImage = 'assets/img/loading.gif';
+      this.fileCloseImage = 'assets/img/close.png';
       this.resizeDuration = 700;
       this.fadeDuration = 500;
       this.labelImage = "Image";
       this.labelOf = "of";
+// >>>DZC
+      this.featBrowser = true;
+      this.breathingSize = 30;
+      this.captionHeight = 30;
+// <<<DZC
     }
 
     return LightboxOptions;
@@ -184,6 +199,11 @@ lightbox = new Lightbox options
         top: top + 'px',
         left: left + 'px'
       }).fadeIn(this.options.fadeDuration);
+
+// >>>DZC
+      $(window).on("resize", { recall: true }, this.adjustImageSize);
+// <<<DZC
+
       this.changeImage(imageNumber);
     };
 
@@ -201,13 +221,129 @@ lightbox = new Lightbox options
       preloader = new Image;
       preloader.onload = function() {
         $image.attr('src', _this.album[imageNumber].link);
-        $image.width = preloader.width;
-        $image.height = preloader.height;
-        return _this.sizeContainer(preloader.width, preloader.height);
+// >>>DZC
+	_this.album[imageNumber].width = preloader.width;
+	_this.album[imageNumber].height = preloader.height;
+	return _this.adjustImageSize({recall: false});
+// <<<DZC
+        //$image.width = preloader.width;
+        //$image.height = preloader.height;
+        //return _this.sizeContainer(preloader.width, preloader.height);
       };
       preloader.src = this.album[imageNumber].link;
       this.currentImageIndex = imageNumber;
     };
+
+// >>>DZC
+    Lightbox.prototype.adjustImageSize = function(data) {
+      var $lightbox, $lightboxOverlay, $lightboxImage, $container,
+	  $outerContainer, $dataContainer, 
+	  containerLeftPadding, containerRightPadding,
+	  containerTopPadding, containerBottomPadding,
+          _this = this;
+      
+      $lightbox        = $('#lightbox');
+      $lightboxOverlay = $('#lightboxOverlay');
+      $lightboxImage   = $lightbox.find('.lb-image');
+      $container = $lightbox.find('.lb-container');
+      $outerContainer  = $lightbox.find('.lb-outerContainer');
+      $dataContainer   = $lightbox.find('.lb-dataContainer');
+
+      containerTopPadding    = parseInt($container.css('padding-top'), 10);
+      containerRightPadding  = parseInt($container.css('padding-right'), 10);
+      containerBottomPadding = parseInt($container.css('padding-bottom'), 10);
+      containerLeftPadding   = parseInt($container.css('padding-left'), 10);
+
+      var imageWidth  = _this.album[_this.currentImageIndex].width;
+      var imageHeight = _this.album[_this.currentImageIndex].height;
+      var arrayPageSize = _this.getPageSize();
+
+      if (_this.options.featBrowser == true) {
+        var imageProportion = imageWidth / imageHeight;
+	var winCaptionProportion =
+          (arrayPageSize.windowWidth  - 2 * _this.options.breathingSize) / 
+	  (arrayPageSize.windowHeight - 3 * _this.options.breathingSize - 
+	    _this.options.captionHeight);
+
+	if (imageProportion > winCaptionProportion) {
+          var maxWidth = arrayPageSize.windowWidth -
+            (containerLeftPadding + containerRightPadding) -
+	    (_this.options.breathingSize * 2);
+	  var maxHeight = Math.round(maxWidth / imageProportion);
+	} else {
+	  var maxHeight = arrayPageSize.windowHeight -
+            (containerTopPadding + containerBottomPadding) -
+	    (_this.options.breathingSize * 2);
+          var maxWidth = Math.round(maxHeight * imageProportion);
+	}
+
+	if (imageWidth > maxWidth || imageHeight > maxHeight) {
+          imageWidth  = maxWidth;
+	  imageHeight = maxHeight;
+        }
+      }
+
+      $lightboxOverlay.css({ height: arrayPageSize.windowHeight + 'px' });
+      $lightboxImage.width(imageWidth).height(imageHeight);
+
+      var arrayPageScroll = _this.getPageScroll();
+      var lightboxTop = arrayPageScroll.scrollY + 
+        ((arrayPageSize.windowHeight - imageHeight - 
+	  _this.options.captionHeight - 
+	  _this.options.breathingSize) / 2);
+      var lightboxLeft = arrayPageScroll.scrollX;
+      $lightbox.css({
+        top:  lightboxTop + 'px',
+        left: lightboxLeft + 'px'
+      });
+
+      if (data.recall == true) {
+        $outerContainer.css({
+          height: (imageHeight + (_this.options.borderSize * 2)) + 'px',
+          width:  (imageWidth  + (_this.options.borderSize * 2)) + 'px'
+        });
+	$dataContainer.css({
+          height: (imageWidth + (_this.options.borderSize * 2)) + 'px'
+	});
+      } else {
+        return this.sizeContainer(imageWidth, imageHeight);
+      }
+    };
+
+    Lightbox.prototype.getPageSize = function() {
+      var pageSize = {
+        documentWidth:  $(document).width(),
+	documentHeight: $(document).height(), 
+	windowWidth:    $(window).width(), 
+	windowHeight:   $(window).height()
+      };
+
+      return pageSize;
+    };
+
+    Lightbox.prototype.getPageScroll = function() {
+      var scrollX, scrollY;
+
+      if (self.pageYOffset) {
+        scrollY = self.pageYOffset;
+        scrollX = self.pageXOffset;
+      } else if (document.documentElement && document.documentElement.scrollTop) {
+        scrollY = document.documentElement.scrollTop;
+	scrollX = document.documentElement.scrollLeft;
+      } else if (document.body) {
+	scrollY = document.body.scrollTop;
+	scrollX = document.body.scrollLeft;
+      }
+
+      var pageScroll = {
+        scrollX: scrollX,
+        scrollY: scrollY
+      };
+
+      return pageScroll;
+    };
+// <<<DZC
+
 
     Lightbox.prototype.sizeOverlay = function() {
       return $('#lightboxOverlay').width($(document).width()).height($(document).height());
