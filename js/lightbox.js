@@ -286,7 +286,7 @@ lightbox = new Lightbox options
         }
       }
 
-      $lightboxOverlay.height(arrayPageSize.windowHeight);
+      $lightboxOverlay.height(arrayPageSize.documentHeight);
       $lightboxImage.width(imageWidth).height(imageHeight);
 
       var arrayPageScroll = _this.getPageScroll();
@@ -301,9 +301,12 @@ lightbox = new Lightbox options
       });
 
       if (recall == true) {
-        $outerContainer.height(imageHeight + (_this.options.borderSize * 2))
-                       .width(imageWidth  + (_this.options.borderSize * 2));
-	$dataContainer.height(imageWidth + (_this.options.borderSize * 2));
+        $outerContainer.height(imageHeight + 
+			       (containerTopPadding + containerTopPadding))
+                       .width(imageWidth  + 
+                              (containerLeftPadding + containerRightPadding));
+	$dataContainer.height(imageWidth + 
+			      (containerLeftPadding + containerRightPadding));
       } else {
         return this.sizeContainer(imageWidth, imageHeight);
       }
