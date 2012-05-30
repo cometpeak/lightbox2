@@ -201,7 +201,10 @@ lightbox = new Lightbox options
       }).fadeIn(this.options.fadeDuration);
 
 // >>>DZC
-      $(window).on("resize", { recall: true }, this.adjustImageSize);
+      var lb = this;
+      $(window).on("resize", function(e) {
+        lb.adjustImageSize(true)
+      });
 // <<<DZC
 
       this.changeImage(imageNumber);
@@ -224,7 +227,7 @@ lightbox = new Lightbox options
 // >>>DZC
 	_this.album[imageNumber].width = preloader.width;
 	_this.album[imageNumber].height = preloader.height;
-	return _this.adjustImageSize({recall: false});
+	return _this.adjustImageSize(false);
 // <<<DZC
         //$image.width = preloader.width;
         //$image.height = preloader.height;
@@ -235,7 +238,7 @@ lightbox = new Lightbox options
     };
 
 // >>>DZC
-    Lightbox.prototype.adjustImageSize = function(data) {
+    Lightbox.prototype.adjustImageSize = function(recall) {
       var $lightbox, $lightboxOverlay, $lightboxImage, $container,
 	  $outerContainer, $dataContainer, 
 	  containerLeftPadding, containerRightPadding,
@@ -245,7 +248,7 @@ lightbox = new Lightbox options
       $lightbox        = $('#lightbox');
       $lightboxOverlay = $('#lightboxOverlay');
       $lightboxImage   = $lightbox.find('.lb-image');
-      $container = $lightbox.find('.lb-container');
+      $container       = $lightbox.find('.lb-container');
       $outerContainer  = $lightbox.find('.lb-outerContainer');
       $dataContainer   = $lightbox.find('.lb-dataContainer');
 
@@ -283,7 +286,7 @@ lightbox = new Lightbox options
         }
       }
 
-      $lightboxOverlay.css({ height: arrayPageSize.windowHeight + 'px' });
+      $lightboxOverlay.height(arrayPageSize.windowHeight);
       $lightboxImage.width(imageWidth).height(imageHeight);
 
       var arrayPageScroll = _this.getPageScroll();
@@ -297,14 +300,10 @@ lightbox = new Lightbox options
         left: lightboxLeft + 'px'
       });
 
-      if (data.recall == true) {
-        $outerContainer.css({
-          height: (imageHeight + (_this.options.borderSize * 2)) + 'px',
-          width:  (imageWidth  + (_this.options.borderSize * 2)) + 'px'
-        });
-	$dataContainer.css({
-          height: (imageWidth + (_this.options.borderSize * 2)) + 'px'
-	});
+      if (recall == true) {
+        $outerContainer.height(imageHeight + (_this.options.borderSize * 2))
+                       .width(imageWidth  + (_this.options.borderSize * 2));
+	$dataContainer.height(imageWidth + (_this.options.borderSize * 2));
       } else {
         return this.sizeContainer(imageWidth, imageHeight);
       }
