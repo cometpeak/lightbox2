@@ -305,7 +305,7 @@ lightbox = new Lightbox options
 			       (containerTopPadding + containerTopPadding))
                        .width(imageWidth  + 
                               (containerLeftPadding + containerRightPadding));
-	$dataContainer.height(imageWidth + 
+	$dataContainer.width(imageWidth + 
 			      (containerLeftPadding + containerRightPadding));
       } else {
         return this.sizeContainer(imageWidth, imageHeight);
